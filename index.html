@@ -59,6 +59,7 @@
                 </div>
                 <button onclick="make()">make</button>
                 <img id="play">
+                <img id="show">
             </div>
         </center>
     </body>
@@ -85,6 +86,11 @@
     function make() {
         size = [Number(document.getElementById("xsize").value),Number(document.getElementById("ysize").value)];
         piecenum = Number(document.getElementById("piecenum").value);
+        if (size[0]*size[1]<piecenum) {
+            piecenum = size[0]*size[1]
+            document.getElementById("piecenum").value = piecenum
+            document.getElementById("piecenum_show").innerHTML = piecenum
+        }
 
         // 参考 https://qiita.com/qiiChan/items/5179a7e540257d38c181
         let worker = new Worker('makepuzzle.js');
@@ -92,6 +98,7 @@
             let wdata = e.data;
             worker.terminate();
             madepuzzle(wdata[1])
+            //playpuzzle_show(wdata[1])
         }, false);
         worker.postMessage([size,piecenum]);
 
@@ -103,14 +110,87 @@
         iarr = new Uint8ClampedArray(x * y * 4);
         for (iy = 0; iy < y; iy++) {
             for (ix = 0; ix < x; ix++) {
-                dx = Math.floor(ix/16)
-                dy = Math.floor(iy/16)
+                dx = Math.floor(ix/16);
+                dy = Math.floor(iy/16);
                 d = piececolor[data[dy][dx]-1];
                 index = (iy*x+ix)*4; // index of position [ix,iy]
                 iarr[index+0] = d[0]; // Red
                 iarr[index+1] = d[1]; // Green
                 iarr[index+2] = d[2]; // Blue
                 iarr[index+3] = 255; // Alpha
+            }
+        }
+        let canvasOutput = document.createElement("canvas");
+        canvasOutput.height = y;
+        canvasOutput.width = x;
+        canvasOutput.getContext('2d').putImageData(new ImageData(iarr, x, y), 0, 0);
+        document.getElementById("show").src = canvasOutput.toDataURL('image/png');
+    }
+    
+    function playpuzzle_show(data) {
+        a=data
+        margin = [10,50];
+        slide = [0,-20];
+        x = 16*size[0]+margin[0]*2;
+        y = 16*size[1]+margin[1]*2;
+        
+        // make play data
+        pd = [];
+
+        for (p=0;p<piecenum;p++) {
+            let pa = new Array(y)
+            for (i=0;i<y;i++) {
+                pa[i] = new Array(x).fill(0);
+            }
+            pd.push(pa);
+        }
+
+        for (let i=0;i<y;i++) {
+            for (let j=0;j<x;j++) {
+                dy = Math.floor(i/16);
+                dx = Math.floor(j/16);
+                if (data[dy]!=null && data[dy][dx]!=null) {
+                    pd[data[dy][dx]-1][i+margin[1]+slide[1]][j+margin[0]+slide[0]] = data[dy][dx];
+                }
+            }
+        }
+
+        pindex = []
+        for (i=0;i<piecenum;i++) {
+            pindex.push(i+1);
+        }
+
+        // view
+        iarr = new Uint8ClampedArray(x * y * 4);
+        for (iy = 0; iy < y; iy++) {
+            for (ix = 0; ix < x; ix++) {
+                index = (iy*x+ix)*4; // index of position [ix,iy]
+                if (ix>margin[0]+slide[0]&ix<margin[0]+size[0]*16+slide[0] & iy>margin[1]+slide[1]&iy<margin[1]+size[1]*16+slide[1]) {
+                    iarr[index+0] = 100; // Red
+                    iarr[index+1] = 100; // Green
+                    iarr[index+2] = 100; // Blue
+                    iarr[index+3] = 255; // Alpha
+                }
+                else {
+                    iarr[index+0] = 50; // Red
+                    iarr[index+1] = 50; // Green
+                    iarr[index+2] = 50; // Blue
+                    iarr[index+3] = 255; // Alpha
+                }
+            }
+        }
+        for (iy = 0; iy < y; iy++) {
+            for (ix = 0; ix < x; ix++) {
+                index = (iy*x+ix)*4; // index of position [ix,iy]
+                for (p=0;p<piecenum;p++) {
+                    d = piececolor[pd[pindex[p]-1][iy][ix]-1]
+                    if (d!=null) {
+                        iarr[index+0] = d[0]; // Red
+                        iarr[index+1] = d[1]; // Green
+                        iarr[index+2] = d[2]; // Blue
+                        iarr[index+3] = 255; // Alpha
+                    }
+                }
             }
         }
         let canvasOutput = document.createElement("canvas");
@@ -140,10 +220,11 @@
     input {
         width: 400px;
     }
-    #play {
+    #play,#show {
         width: 300px;
         image-rendering: pixelated;
         display: block;
+        margin: 10px;
     }
 </style>
 

@@ -2,19 +2,15 @@
 
 //worker
 self.addEventListener('message', function(e) {
-    size = e.data[0]
-    piecenum = e.data[1]
+    size = e.data[0];
+    piecenum = e.data[1];
 
-    data = new Array(size[1])
-    if (size[0]*size[1]<piecenum) {
-        piecenum = size[0]*size[1]
-        document.getElementById("piecenum").value = piecenum
-        document.getElementById("piecenum_show").innerHTML = piecenum
-    }
+    data = new Array(size[1]);
     for (i=0;i<size[1];i++) {
-        data[i] = new Array(size[0]).fill(0)
+        data[i] = new Array(size[0]).fill(0);
     }
-    for (p=1;p<=piecenum;p++) { // first of part
+
+    for (p=1;p<=piecenum;p++) {
         f = true;
         while (f) {
             lx = Math.floor(Math.random()*size[0]);
@@ -40,7 +36,7 @@ self.addEventListener('message', function(e) {
                         minb = []
                         for (let ai=0;ai<nba.length;ai++) {
                             if (bnum(nba[ai])==md) {
-                                minb.push(nba[ai])
+                                minb.push(nba[ai]);
                             }
                         }
                         b = minb[Math.floor(Math.random()*minb.length)];
