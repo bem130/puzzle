@@ -57,13 +57,14 @@
                         </tr>
                     </table>
                 </div>
-                <button onclick="make()">make</button>
-                <div id="result"></div>
+                <button onclick="make()">make</button><br>
+                <img id="play">
             </div>
         </center>
     </body>
 </html>
 <script>
+    let size,piecenum
     {
         s_ysize = function(){document.getElementById("ysize_show").innerHTML = document.getElementById("ysize").value};
         s_xsize = function(){document.getElementById("xsize_show").innerHTML = document.getElementById("xsize").value};
@@ -85,31 +86,38 @@
         size = [Number(document.getElementById("xsize").value),Number(document.getElementById("ysize").value)];
         piecenum = Number(document.getElementById("piecenum").value);
 
+        // 参考 https://qiita.com/qiiChan/items/5179a7e540257d38c181
         let worker = new Worker('makepuzzle.js');
         worker.addEventListener('message', function(e) {
-            wdata = e.data;  //処理ループ内で使用するデータ
-            preshow(wdata[1]);
+            let wdata = e.data;
             worker.terminate();
+            madepuzzle(wdata[1])
         }, false);
         worker.postMessage([size,piecenum]);
 
     }
 
-    function preshow(data) {
-        table = document.createElement("table");
-        table.style.width = "500px";
-        table.style.height = "500px";
-        for (trc=0;trc<size[1];trc++) {
-            tr = document.createElement("tr");
-            for (tdc=0;tdc<size[0];tdc++) {
-                d = piececolor[data[trc][tdc]-1];
-                td = document.createElement("td");
-                td.style.backgroundColor = "rgb("+d[0]+","+d[1]+","+d[2]+")";
-                tr.appendChild(td);
+    function madepuzzle(data) {
+        x = 16*size[0]
+        y = 16*size[1]
+        iarr = new Uint8ClampedArray(x * y * 4);
+        for (iy = 0; iy < y; iy++) {
+            for (ix = 0; ix < x; ix++) {
+                dx = Math.floor(ix/16)
+                dy = Math.floor(iy/16)
+                d = piececolor[data[dy][dx]-1];
+                index = (iy*x+ix)*4; // index of position [ix,iy]
+                iarr[index+0] = d[0]; // Red
+                iarr[index+1] = d[1]; // Green
+                iarr[index+2] = d[2]; // Blue
+                iarr[index+3] = 255; // Alpha
             }
-            table.appendChild(tr);
         }
-        document.getElementById("result").replaceChildren(table);
+        let canvasOutput = document.createElement("canvas");
+        canvasOutput.height = y;
+        canvasOutput.width = x;
+        canvasOutput.getContext('2d').putImageData(new ImageData(iarr, x, y), 0, 0);
+        document.getElementById("play").src = canvasOutput.toDataURL('image/png');
     }
 
 </script>
@@ -131,6 +139,9 @@
     }
     input {
         width: 400px;
+    }
+    #play {
+        width: 300px;
     }
 </style>
 
