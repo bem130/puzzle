@@ -30,7 +30,7 @@
                                 <input id="xsize" value="10" type="range" max="15" min="5">
                             </td>
                             <td>
-                                <p id="xsize_show">10</p>
+                                <p id="xsize_show"></p>
                             </td>
                         </tr>
                         <tr>
@@ -41,7 +41,7 @@
                                 <input id="ysize" value="10" type="range" max="15" min="5">
                             </td>
                             <td>
-                                <p id="ysize_show">10</p>
+                                <p id="ysize_show"></p>
                             </td>
                         </tr>
                         <tr>
@@ -52,18 +52,71 @@
                                 <input id="piecenum" value="20" type="range" max="32" min="3">
                             </td>
                             <td>
-                                <p id="piecenum_show">20</p>
+                                <p id="piecenum_show"></p>
                             </td>
                         </tr>
                     </table>
                 </div>
                 <button onclick="make()">make</button>
                 <img id="play" draggable="false" style="cursor: none;">
+                <div id="jokearea">
+                    <details>
+                        <summary>~|*_*||*_*||*_*||*_*||*_*|~</summary>
+                        <div id="joke">
+                            <p>もしかして、パズルができなくてイラついてる？</p>
+                            <p>そんな時は、モスキート音を聞かないかい？</p>
+                            <p>※爆音注意</p>
+                            <button id="scontrol" onclick="scontrol()">play</button>
+                            <table>
+                                <tr>
+                                    <td>
+                                        周波数
+                                    </td>
+                                    <td>
+                                        <input id="freq" value="1500" type="range" max="15000" min="100">
+                                    </td>
+                                    <td>
+                                        <p id="freq_show"></p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </details>
+                </div>
             </div>
         </center>
     </body>
 </html>
 <script>
+    playing = false;
+    let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let oscillator = audioCtx.createOscillator();
+    {
+        s_freq = function(){document.getElementById("freq_show").innerHTML = document.getElementById("freq").value;scontrol();scontrol();};
+        document.getElementById("freq").oninput = s_freq;
+        s_freq();
+    }
+    // - joke -
+    function scontrol() {
+        if (playing) {
+            document.getElementById("scontrol").innerHTML = "play";
+            oscillator.stop(0);
+            playing = false;
+        }
+        else {
+            document.getElementById("scontrol").innerHTML = "stop";
+            freq = Number(document.getElementById("freq").value);
+            oscillator = audioCtx.createOscillator();
+            oscillator.frequency.value = freq;
+            oscillator.connect(audioCtx.destination);
+            oscillator.start();
+            playing = true;
+        }
+        mes = document.getElementById("scontrol").innerHTML;
+    }
+</script>
+<script>
+    // - main -
     let size,piecenum
     let making = false
     let data
@@ -85,7 +138,7 @@
         s_piecenum();
     }
 
-    make()
+    make();
     function make() {
         if (making) {
             return;
@@ -103,7 +156,7 @@
         let worker = new Worker('makepuzzle.js');
         worker.addEventListener('message', function(e) {
             let wdata = e.data;
-            data = wdata[1]
+            data = wdata[1];
             worker.terminate();
             making = false;
             playpuzzle();
@@ -124,8 +177,8 @@
                     cursorpos = pcp;
                 }
                 if (holding&selecting>0) {
-                    pmd[selecting-1][0] = cursorpos[0]-hpos[0]
-                    pmd[selecting-1][1] = cursorpos[1]-hpos[1]
+                    pmd[selecting-1][0] = cursorpos[0]-hpos[0];
+                    pmd[selecting-1][1] = cursorpos[1]-hpos[1];
                 }
         }
         mousedown = function(e) {
@@ -142,11 +195,11 @@
             ppin = pindex;
             if (selecting>0) {
                 holding = true;
-                bfppins = ppin[selecting-1]
+                bfppins = ppin[selecting-1];
                 ppin[selecting-1] = piecenum+1;
                 for (p=0;p<piecenum;p++) {
                     if (ppin[p]>bfppins) {
-                        ppin[p]-=1
+                        ppin[p]-=1;
                     }
                 }
                 console.log(ppin,selecting)
@@ -157,18 +210,18 @@
             }
         }
         mouseup = function(e) {
-            update(e)
+            update(e);
             holding = false;
             selecting = 0;
         }
         mouseleave = function(e) {
-            update(e)
+            update(e);
             holding = false;
             leaved = true;
         }
         mouseenter = function(e) {
             if (leaved) {
-                update(e)
+                update(e);
                 holding = true;
             }
             leaved = false;
@@ -232,7 +285,7 @@
         width: 400px;
         height: 70px;
         font-size: 25px;
-        margin: 30px;
+        margin: 10px;
     }
     table,tr,td {
         margin: 0;
@@ -247,11 +300,22 @@
         width: 400px;
     }
     #play,#show {
-        width: 700px;
+        width: 500px;
         image-rendering: pixelated;
         display: block;
         margin: 10px;
         padding: 0px;
+    }
+    #joke {
+        background: rgb(200,200,200);
+        border-radius: 10px;
+        padding: 10px;
+        margin: 0px;
+    }
+    #jokearea {
+        width: 600px;
+        min-width: 200px;
+        margin: 10px;
     }
 </style>
 
