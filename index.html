@@ -152,29 +152,46 @@
             if (holding) {
                 mlen = [e.offsetX-hloc[0],e.offsetY-hloc[1]];
                 mblock = [Math.floor(mlen[0]/playims[0]*pfield[0]),Math.floor(mlen[1]/playims[1]*pfield[1])];
-                pmd[selecting-1] = [bhpos[0]+mblock[0],bhpos[1]+mblock[1]]
+                pmd[selecting-1] = [bhpos[0]+mblock[0],bhpos[1]+mblock[1]];
             }
             playpuzzle_show();
             //console.log(selecting)
         }
         mousedown = function(e) {
-            holding = true;
-            pcp = cursorpos
-            ps = 0
+            pcp = cursorpos;
+            ps = 0;
             for (p=0;p<piecenum;p++) {
-                if (pd[pindex[piecenum-p-1]-1][pcp[1]*16][pcp[0]*16]>0) {
-                    ps = pd[pindex[piecenum-p-1]-1][pcp[1]*16][pcp[0]*16];
+                if (pd[pindex[p]-1][pcp[1]*16][pcp[0]*16]>0) {
+                    ps = pd[pindex[p]-1][pcp[1]*16][pcp[0]*16];
                 }
             }
             selecting = ps;
-            bhpos = pmd[selecting-1];
-            hloc = [e.offsetX,e.offsetY];
+
+            ppin = pindex;
+            if (selecting>0) {
+                if (true) {
+                    bfppins = ppin[selecting-1]
+                    ppin[selecting-1] = piecenum+1;
+                    for (p=0;p<piecenum;p++) {
+                        if (ppin[p]>bfppins) {
+                            ppin[p]-=1
+                        }
+                    }
+                    console.log(ppin,selecting)
+                    console.log(pindex,selecting)
+                }
+                bhpos = pmd[selecting-1];
+                hloc = [e.offsetX,e.offsetY];
+                holding = true;
+            }
         }
         mouseup = function(e) {
             holding = false;
+            selecting = 0;
         }
         mouseleave = function(e) {
             holding = false;
+            selecting = 0
         }
         playim.addEventListener("mouseenter", update, false);
         playim.addEventListener("mousemove", update, false);
