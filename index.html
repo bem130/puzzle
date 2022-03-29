@@ -58,7 +58,7 @@
                     </table>
                 </div>
                 <button onclick="make()">make</button>
-                <img id="play">
+                <img id="play" draggable="false">
                 <img id="show">
             </div>
         </center>
@@ -66,6 +66,11 @@
 </html>
 <script>
     let size,piecenum
+    let making = false
+    let data
+    let holding = false
+    let bhpos,hloc
+
     {
         s_ysize = function(){document.getElementById("ysize_show").innerHTML = document.getElementById("ysize").value};
         s_xsize = function(){document.getElementById("xsize_show").innerHTML = document.getElementById("xsize").value};
@@ -84,29 +89,35 @@
 
     make()
     function make() {
+        if (making) {
+            return;
+        }
+        making = true;
         size = [Number(document.getElementById("xsize").value),Number(document.getElementById("ysize").value)];
         piecenum = Number(document.getElementById("piecenum").value);
         if (size[0]*size[1]<piecenum) {
-            piecenum = size[0]*size[1]
-            document.getElementById("piecenum").value = piecenum
-            document.getElementById("piecenum_show").innerHTML = piecenum
+            piecenum = size[0]*size[1];
+            document.getElementById("piecenum").value = piecenum;
+            document.getElementById("piecenum_show").innerHTML = piecenum;
         }
 
         // 参考 https://qiita.com/qiiChan/items/5179a7e540257d38c181
         let worker = new Worker('makepuzzle.js');
         worker.addEventListener('message', function(e) {
             let wdata = e.data;
+            data = wdata[1]
             worker.terminate();
-            madepuzzle(wdata[1])
-            //playpuzzle_show(wdata[1])
+            making = false;
+            //madepuzzle();
+            playpuzzle();
         }, false);
         worker.postMessage([size,piecenum]);
 
     }
 
-    function madepuzzle(data) {
-        x = 16*size[0]
-        y = 16*size[1]
+    function madepuzzle() {
+        x = 16*size[0];
+        y = 16*size[1];
         iarr = new Uint8ClampedArray(x * y * 4);
         for (iy = 0; iy < y; iy++) {
             for (ix = 0; ix < x; ix++) {
@@ -126,19 +137,80 @@
         canvasOutput.getContext('2d').putImageData(new ImageData(iarr, x, y), 0, 0);
         document.getElementById("show").src = canvasOutput.toDataURL('image/png');
     }
+
+    function getmouse_play() {
+        selecting = 0;
+        playim = document.getElementById("play");
+        playim.oncontextmenu = function () {return false;};
+        update = function(e) {
+            playims = [playim.clientWidth,playim.clientHeight];
+            pfield = [margin[0]*2+size[0],margin[1]*2+size[1]];
+            pcp = [Math.floor(e.offsetX/playims[0]*pfield[0]),Math.floor(e.offsetY/playims[1]*pfield[1])];
+            if (pcp[0]>=0&pcp[0]<pfield[0] & pcp[1]>=0&pcp[1]<pfield[1]) {
+                cursorpos = pcp;
+            }
+            if (holding) {
+                mlen = [e.offsetX-hloc[0],e.offsetY-hloc[1]];
+                mblock = [Math.floor(mlen[0]/playims[0]*pfield[0]),Math.floor(mlen[1]/playims[1]*pfield[1])];
+                pmd[selecting-1] = [bhpos[0]+mblock[0],bhpos[1]+mblock[1]]
+            }
+            playpuzzle_show();
+            //console.log(selecting)
+        }
+        mousedown = function(e) {
+            holding = true;
+            pcp = cursorpos
+            ps = 0
+            for (p=0;p<piecenum;p++) {
+                if (pd[pindex[piecenum-p-1]-1][pcp[1]*16][pcp[0]*16]>0) {
+                    ps = pd[pindex[piecenum-p-1]-1][pcp[1]*16][pcp[0]*16];
+                }
+            }
+            selecting = ps;
+            bhpos = pmd[selecting-1];
+            hloc = [e.offsetX,e.offsetY];
+        }
+        mouseup = function(e) {
+            holding = false;
+        }
+        mouseleave = function(e) {
+            holding = false;
+        }
+        playim.addEventListener("mouseenter", update, false);
+        playim.addEventListener("mousemove", update, false);
+        playim.addEventListener("mouseleave", mouseleave, false);
+        playim.addEventListener("mousedown", mousedown, false);
+        playim.addEventListener("mouseup", mouseup, false);
+    }
     
-    function playpuzzle_show(data) {
-        a=data
-        margin = [10,50];
-        slide = [0,-20];
-        x = 16*size[0]+margin[0]*2;
-        y = 16*size[1]+margin[1]*2;
+    function playpuzzle() {
+        // moving data
+        pmd = [];
+        for (p=0;p<piecenum;p++) {
+            pmd.push([0,0]);
+        }
+        // index data
+        pindex = [];
+        for (i=0;i<piecenum;i++) {
+            pindex.push(i+1);
+        }
+        // cursor data
+        cursorpos = [0,0];
         
+        playpuzzle_show();
+        getmouse_play();
+    }
+
+    function playpuzzle_show() {
+        margin = [2,2];
+        slide = [0,0];
+        x = 16*size[0]+margin[0]*16*2;
+        y = 16*size[1]+margin[1]*16*2;
+
         // make play data
         pd = [];
-
         for (p=0;p<piecenum;p++) {
-            let pa = new Array(y)
+            let pa = new Array(y);
             for (i=0;i<y;i++) {
                 pa[i] = new Array(x).fill(0);
             }
@@ -150,14 +222,10 @@
                 dy = Math.floor(i/16);
                 dx = Math.floor(j/16);
                 if (data[dy]!=null && data[dy][dx]!=null) {
-                    pd[data[dy][dx]-1][i+margin[1]+slide[1]][j+margin[0]+slide[0]] = data[dy][dx];
+                    mvp = pmd[data[dy][dx]-1];
+                    pd[data[dy][dx]-1][i+margin[1]*16+slide[1]*16+mvp[1]*16][j+margin[0]*16+slide[0]*16+mvp[0]*16] = data[dy][dx];
                 }
             }
-        }
-
-        pindex = []
-        for (i=0;i<piecenum;i++) {
-            pindex.push(i+1);
         }
 
         // view
@@ -165,7 +233,7 @@
         for (iy = 0; iy < y; iy++) {
             for (ix = 0; ix < x; ix++) {
                 index = (iy*x+ix)*4; // index of position [ix,iy]
-                if (ix>margin[0]+slide[0]&ix<margin[0]+size[0]*16+slide[0] & iy>margin[1]+slide[1]&iy<margin[1]+size[1]*16+slide[1]) {
+                if (ix>=margin[0]*16+slide[0]*16&ix<margin[0]*16+size[0]*16+slide[0]*16 & iy>=margin[1]*16+slide[1]*16&iy<margin[1]*16+size[1]*16+slide[1]*16) {
                     iarr[index+0] = 100; // Red
                     iarr[index+1] = 100; // Green
                     iarr[index+2] = 100; // Blue
@@ -193,6 +261,23 @@
                 }
             }
         }
+
+        // draw cursor
+
+        for (iy = 0; iy < 16; iy++) {
+            for (ix = 0; ix < 16; ix++) {
+                if ((iy<1|iy>15-1 | ix<1|ix>15-1)) {
+                    i = iy+cursorpos[1]*16
+                    j = ix+cursorpos[0]*16
+                    index = (i*x+j)*4;
+                    iarr[index+0] = 255; // Red
+                    iarr[index+1] = 255; // Green
+                    iarr[index+2] = 255; // Blue
+                    iarr[index+3] = 255; // Alpha
+                }
+            }
+        }
+
         let canvasOutput = document.createElement("canvas");
         canvasOutput.height = y;
         canvasOutput.width = x;
@@ -221,10 +306,11 @@
         width: 400px;
     }
     #play,#show {
-        width: 300px;
+        width: 500px;
         image-rendering: pixelated;
         display: block;
         margin: 10px;
+        padding: 0px;
     }
 </style>
 
