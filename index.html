@@ -161,8 +161,8 @@
             pcp = cursorpos;
             ps = 0;
             for (p=0;p<piecenum;p++) {
-                if (pd[pindex[p]-1][pcp[1]*16][pcp[0]*16]>0) {
-                    ps = pd[pindex[p]-1][pcp[1]*16][pcp[0]*16];
+                if (pd[pindex.indexOf(p+1)][pcp[1]*16][pcp[0]*16]>0) {
+                    ps = pd[pindex.indexOf(p+1)][pcp[1]*16][pcp[0]*16];
                 }
             }
             selecting = ps;
@@ -268,7 +268,7 @@
             for (ix = 0; ix < x; ix++) {
                 index = (iy*x+ix)*4; // index of position [ix,iy]
                 for (p=0;p<piecenum;p++) {
-                    d = piececolor[pd[pindex[p]-1][iy][ix]-1]
+                    d = piececolor[pd[pindex.indexOf(p+1)][iy][ix]-1]
                     if (d!=null) {
                         iarr[index+0] = d[0]; // Red
                         iarr[index+1] = d[1]; // Green
